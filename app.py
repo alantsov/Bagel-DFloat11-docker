@@ -4,7 +4,7 @@ import os
 import torch
 import random
 
-from accelerate import infer_auto_device_map, load_checkpoint_and_dispatch, init_empty_weights
+from accelerate import infer_auto_device_map, dispatch_model, init_empty_weights
 from PIL import Image
 
 from data.data_utils import add_special_tokens, pil_img2rgb
@@ -18,9 +18,11 @@ from modeling.bagel import (
 )
 from modeling.qwen2 import Qwen2Tokenizer
 
+from dfloat11 import DFloat11Model
+
 
 # Model Initialization
-model_path = "/path/to/BAGEL-7B-MoT/weights" #Download from https://huggingface.co/ByteDance-Seed/BAGEL-7B-MoT
+model_path = "./BAGEL-7B-MoT-DF11" # Download from https://huggingface.co/DFloat11/BAGEL-7B-MoT-DF11
 
 llm_config = Qwen2Config.from_json_file(os.path.join(model_path, "llm_config.json"))
 llm_config.qk_norm = True
@@ -31,7 +33,7 @@ vit_config = SiglipVisionConfig.from_json_file(os.path.join(model_path, "vit_con
 vit_config.rope = False
 vit_config.num_hidden_layers -= 1
 
-vae_model, vae_config = load_ae(local_path=os.path.join(model_path, "ae.safetensors"))
+vae_model, vae_config = load_ae(local_path=os.path.join(model_path, "vae/ae.safetensors"))
 
 config = BagelConfig(
     visual_gen=True,
@@ -57,11 +59,23 @@ tokenizer, new_token_ids, _ = add_special_tokens(tokenizer)
 vae_transform = ImageTransform(1024, 512, 16)
 vit_transform = ImageTransform(980, 224, 14)
 
+model = model.to(torch.bfloat16)
+model.load_state_dict({
+    name: torch.empty(param.shape, dtype=param.dtype, device='cpu') if param.device.type == 'meta' else param
+    for name, param in model.state_dict().items()
+}, assign=True)
+
+DFloat11Model.from_pretrained(
+    model_path,
+    bfloat16_model=model,
+    device='cpu',
+)
+
 # Model Loading and Multi GPU Infernece Preparing
 device_map = infer_auto_device_map(
     model,
-    max_memory={i: "80GiB" for i in range(torch.cuda.device_count())},
-    no_split_module_classes=["Bagel", "Qwen2MoTDecoderLayer"],
+    max_memory={0: "24GiB"},
+    no_split_module_classes=["Bagel", "Qwen2MoTDecoderLayer", "SiglipVisionModel"],
 )
 
 same_device_modules = [
@@ -87,14 +101,8 @@ else:
         if k in device_map:
             device_map[k] = first_device
             
-model = load_checkpoint_and_dispatch(
-    model,
-    checkpoint=os.path.join(model_path, "ema.safetensors"),
-    device_map=device_map,
-    offload_buffers=True,
-    dtype=torch.bfloat16,
-    force_hooks=True,
-).eval()
+model = dispatch_model(model, device_map=device_map, force_hooks=True)
+model = model.eval()
 
 
 # Inferencer Preparing 
