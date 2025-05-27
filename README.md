@@ -84,6 +84,20 @@ chmod +x test_curl_commands.sh
 ./test_curl_commands.sh
 ```
 
+6️⃣ Use Docker for containerized deployment!
+
+Build the Docker container:
+```bash
+docker build -t bagel-dfloat11 .
+```
+
+Run the container with GPU support, port mapping, and model directory mapping:
+```bash
+docker run --gpus=all -p 5000:5000 -v /path/to/BAGEL-7B-MoT-DF11:/app/BAGEL-7B-MoT-DF11 bagel-dfloat11
+```
+
+Note: Replace `/path/to/BAGEL-7B-MoT-DF11` with the actual path to your model directory. If you don't have the model downloaded yet, omit the volume mapping and the container will download it automatically.
+
 ## 📄 Learn More
 
 * **Paper**: [70% Size, 100% Accuracy: Lossless LLM Compression for Efficient GPU Inference via Dynamic-Length Float](https://arxiv.org/abs/2504.11651)
