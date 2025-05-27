@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Clone the repository
-RUN git clone https://github.com/LeanModels/Bagel-DFloat11.git /app
+RUN git clone https://github.com/alantsov/Bagel-DFloat11-docker.git /app
 
 # Install Python dependencies
 RUN pip3 install --no-cache-dir torch==2.6 torchvision
@@ -33,9 +33,6 @@ RUN git clone https://github.com/Dao-AILab/flash-attention.git && \
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 RUN pip3 install flask
-
-COPY load_weights.py .
-COPY server.py .
 
 # Create a script to check and load weights if needed
 RUN echo '#!/bin/bash \n\
