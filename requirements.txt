@@ -14,3 +14,4 @@ transformers==4.51.0
 accelerate>=0.34.0
 wandb
 dfloat11[cuda12]
+flask

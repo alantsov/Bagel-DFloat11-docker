@@ -66,6 +66,24 @@ pip install gradio
 python app.py
 ```
 
+5️⃣ Use Flask Server API for programmatic access!
+```bash
+python server.py
+```
+
+The Flask server provides two endpoints:
+- `/ping` - A simple health check endpoint
+- `/generate` - Generate images from text prompts
+
+Test the server with the provided curl commands:
+```bash
+# Make the script executable
+chmod +x test_curl_commands.sh
+
+# Run the test script
+./test_curl_commands.sh
+```
+
 ## 📄 Learn More
 
 * **Paper**: [70% Size, 100% Accuracy: Lossless LLM Compression for Efficient GPU Inference via Dynamic-Length Float](https://arxiv.org/abs/2504.11651)
